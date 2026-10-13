@@ -14,7 +14,7 @@ const empty = () => ({ documents: [], tests: [], meds: [], dx: [], events: [], a
 
 const supa = () => {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return url && key ? { url: url.replace(/\/$/, ''), key } : null;
+  return url && key ? { url: url.trim().replace(/\/+$/, ''), key: key.trim() } : null;
 };
 const kv = () => {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -24,7 +24,10 @@ const kv = () => {
 export const persistence = () => (supa() || kv() ? 'durable' : 'ephemeral');
 
 const supaFetch = async (cfg, pathAndQuery, init = {}) => {
-  const r = await fetch(`${cfg.url}/rest/v1/medimind_state${pathAndQuery}`, { ...init, headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', ...init.headers } });
+  if (!/^https:\/\/[^/]+\.supabase\.(co|in)$/i.test(cfg.url)) throw new Error('SUPABASE_URL is wrong. It must look like https://abcdxyz.supabase.co (no /rest/v1, no dashboard link, no spaces or quotes).');
+  let r;
+  try { r = await fetch(`${cfg.url}/rest/v1/medimind_state${pathAndQuery}`, { ...init, headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', ...init.headers } }); }
+  catch (e) { throw new Error(`Cannot reach Supabase (${e.cause?.code || e.cause?.message || e.message}). Check SUPABASE_URL and that the project is not paused.`); }
   const text = await r.text();
   if (!r.ok) throw new Error(`Supabase error ${r.status}: ${text.slice(0, 200)}`);
   return text ? JSON.parse(text) : null;
