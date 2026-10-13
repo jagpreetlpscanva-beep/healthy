@@ -81,7 +81,7 @@ export default function App() {
   const saveExtraction = async (ex, docId) => {
     const file = files[0]; const rest = files.slice(1);
     try {
-      if (docId && backend === 'online') hydrate(await api.confirm(docId, ex));
+      if (docId && backend === 'online') hydrate(await api.confirm(docId, ex, { filename: file?.name || SAMPLE_FILE.name, size: file?.size || SAMPLE_FILE.size, mime: file?.type || 'application/pdf', sample: !(file instanceof File) }));
       else {
         const name = file?.name || SAMPLE_FILE.name;
         const merge = (a, b) => [...b, ...a.filter(x => !b.some(y => y.id === x.id))];
