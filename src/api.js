@@ -10,7 +10,7 @@ export const api = {
   saveProfile: profile => fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) }).then(j),
   upload: file => { const f = new FormData(); f.append('file', file); return fetch('/api/documents', { method: 'POST', body: f }).then(j); },
   sample: () => post('/api/documents/sample'),
-  confirm: (id, extraction) => post(`/api/documents/${id}/confirm`, { extraction }),
+  confirm: (id, extraction, document) => post(`/api/documents/${id}/confirm`, { extraction, document }),
   remove: id => fetch(`/api/documents/${id}`, { method: 'DELETE' }).then(j),
   linkAbha: number => post('/api/abha/link', { number }),
   unlinkAbha: () => fetch('/api/abha', { method: 'DELETE' }).then(j),
