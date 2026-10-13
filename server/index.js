@@ -22,14 +22,25 @@ const LABEL = { lab_report: 'Lab report', prescription: 'Prescription', discharg
 const KIND = { lab_report: 'Lab', prescription: 'Prescription', discharge_summary: 'Visit', other: 'Visit' };
 const publicState = db => ({
   documents: db.documents.filter(d => d.status === 'Processed').map(({ pending, storedAs, ...d }) => d),
-  tests: db.tests, meds: db.meds, dx: db.dx, events: db.events, abha: db.abha, ai: aiEnabled(),
+  tests: db.tests, meds: db.meds, dx: db.dx, events: db.events, abha: db.abha,
+  profile: db.profile || { displayName: 'Patient Zero', language: 'EN' }, ai: aiEnabled(),
 });
 const merge = (old, incoming, src) => [...incoming.map(x => ({ ...x, source: src })), ...old.filter(o => !incoming.some(n => n.id === o.id))];
 const pad = n => String(n).padStart(2, '0');
 const ah = fn => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 
 app.get('/api/health', (_q, res) => res.json({ ok: true, ai: aiEnabled(), model: aiEnabled() ? MODEL : null }));
-app.get('/api/profile', (_q, res) => res.json(publicState(load())));
+app.get('/api/profile', (_q, res) => res.set('Cache-Control', 'no-store').json(publicState(load())));
+// Save editable profile preferences. Validate and persist before returning success.
+app.put('/api/profile', ah(async (req, res) => {
+  const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim().slice(0, 80) : '';
+  const language = ['EN', 'HI', 'TE'].includes(req.body?.language) ? req.body.language : null;
+  if (!displayName || !language) return res.status(400).json({ error: 'A display name and supported language are required' });
+  const db = load();
+  db.profile = { displayName, language };
+  save(db);
+  res.set('Cache-Control', 'no-store').json({ profile: db.profile });
+}));
 
 function createPending(db, { filename, mime, size, extraction, storedAs, sample }) {
   const id = crypto.randomUUID();
