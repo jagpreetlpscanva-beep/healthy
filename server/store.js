@@ -5,7 +5,7 @@ import path from 'node:path';
 export const DATA = '/tmp/medimind-data';
 export const UPLOADS = '/tmp/medimind-uploads';
 const FILE = path.join(DATA, 'db.json');
-const empty = () => ({ documents: [], tests: [], meds: [], dx: [], events: [], abha: { number: '', linked: false } });
+const empty = () => ({ documents: [], tests: [], meds: [], dx: [], events: [], abha: { number: '', linked: false }, profile: { displayName: 'Patient Zero', language: 'EN' } });
 
 export const load = () => { try { return { ...empty(), ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { return empty(); } };
 export const save = db => {
