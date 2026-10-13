@@ -57,47 +57,30 @@ export async function extractFromFile(buffer, mime) {
   const isPdf = mime === 'application/pdf';
 
   if (isPdf) {
-    // PDFs: upload via Files API, then use Responses API with file reference
-    let fileId;
-    try {
-      const uploaded = await client.files.create({
-        file: bufferToFile(buffer, mime),
-        purpose: 'assistants',
-      });
-      fileId = uploaded.id;
-    } catch (e) {
-      throw new Error('Failed to upload PDF to OpenAI: ' + e.message);
-    }
-
-    let text = '';
-    try {
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o',  // gpt-4o required for file reading via assistants
-        max_tokens: 3000,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Extract the structured data from the attached medical document. Return only a single valid JSON object matching the schema in the system prompt.' },
-            ],
-          },
-        ],
-        // Note: file attachments in chat completions need the newer approach below
-      });
-      text = response.choices?.[0]?.message?.content || '';
-    } finally {
-      // Always clean up the uploaded file
-      await client.files.delete(fileId).catch(() => {});
-    }
-
-    return parseAndNormalize(text);
+    // PDFs: send inline as base64 file content (Chat Completions supports this for vision models).
+    const response = await client.chat.completions.create({
+      model: MODEL,
+      max_tokens: 4000,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Extract the structured data from the attached medical document. Return only a single valid JSON object matching the schema in the system prompt.' },
+            { type: 'file', file: { filename: 'medical-report.pdf', file_data: `data:application/pdf;base64,${buffer.toString('base64')}` } },
+          ],
+        },
+      ],
+    });
+    return parseAndNormalize(response.choices?.[0]?.message?.content || '');
   } else {
     // Images: send as base64 image_url — this works fine for PNG/JPG/WEBP
     const base64 = buffer.toString('base64');
     const response = await client.chat.completions.create({
       model: MODEL,
-      max_tokens: 3000,
+      max_tokens: 4000,
+      response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM },
         {
