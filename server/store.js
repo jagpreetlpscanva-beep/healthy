@@ -1,14 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-export const DATA = path.join(here, 'data');
-export const UPLOADS = path.join(here, 'uploads');
+// /tmp is the only writable directory in Vercel Lambda (and local dev still works fine)
+export const DATA = '/tmp/medimind-data';
+export const UPLOADS = '/tmp/medimind-uploads';
 const FILE = path.join(DATA, 'db.json');
 const empty = () => ({ documents: [], tests: [], meds: [], dx: [], events: [], abha: { number: '', linked: false } });
 
-// Simple JSON-file store (fine for a hackathon). Swap for Postgres + JSONB FHIR resources in production.
 export const load = () => { try { return { ...empty(), ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { return empty(); } };
 export const save = db => {
   fs.mkdirSync(DATA, { recursive: true });
