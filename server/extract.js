@@ -88,7 +88,7 @@ export async function extractFromFile(buffer, mime) {
       text = response.choices?.[0]?.message?.content || '';
     } finally {
       // Always clean up the uploaded file
-      await client.files.del(fileId).catch(() => {});
+      await client.files.delete(fileId).catch(() => {});
     }
 
     return parseAndNormalize(text);
