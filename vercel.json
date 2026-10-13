@@ -1,7 +1,10 @@
 {
   "functions": {
-    "api/[...path].js": {
+    "api/index.js": {
       "includeFiles": "server/**,src/sampleData.js"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" }
+  ]
 }
